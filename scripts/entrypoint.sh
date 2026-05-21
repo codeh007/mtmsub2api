@@ -100,6 +100,14 @@ render_template() {
     "$src" > "$dst"
 }
 
+redis_cli() {
+  if [[ -n "${REDIS_PASSWORD:-}" ]]; then
+    REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli "$@"
+  else
+    redis-cli "$@"
+  fi
+}
+
 render_template /etc/mtmsub2api/postgresql.conf.tpl "$CONFIG_DIR/postgresql.conf"
 render_template /etc/mtmsub2api/redis.conf.tpl "$CONFIG_DIR/redis.conf"
 chmod 0644 "$CONFIG_DIR/postgresql.conf" "$CONFIG_DIR/redis.conf" || true
@@ -145,10 +153,10 @@ log "starting Redis"
 redis-server "$CONFIG_DIR/redis.conf" >>"$LOG_DIR/redis.log" 2>&1 &
 redis_pid=$!
 for _ in $(seq 1 30); do
-  if REDISCLI_AUTH="${REDIS_PASSWORD:-}" redis-cli -h 127.0.0.1 -p "$REDIS_PORT" ping >/dev/null 2>&1; then break; fi
+  if redis_cli -h 127.0.0.1 -p "$REDIS_PORT" ping >/dev/null 2>&1; then break; fi
   sleep 1
 done
-REDISCLI_AUTH="${REDIS_PASSWORD:-}" redis-cli -h 127.0.0.1 -p "$REDIS_PORT" ping >/dev/null 2>&1 || die "Redis did not become ready"
+redis_cli -h 127.0.0.1 -p "$REDIS_PORT" ping >/dev/null 2>&1 || die "Redis did not become ready"
 
 log "starting sub2api: $*"
 "$@" >>"$LOG_DIR/sub2api.log" 2>&1 &
