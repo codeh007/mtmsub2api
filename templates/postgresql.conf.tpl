@@ -1,0 +1,10 @@
+listen_addresses = '127.0.0.1'
+port = __DATABASE_PORT__
+unix_socket_directories = '/data/run'
+max_connections = __POSTGRES_MAX_CONNECTIONS__
+shared_buffers = '__POSTGRES_SHARED_BUFFERS__'
+effective_cache_size = '__POSTGRES_EFFECTIVE_CACHE_SIZE__'
+maintenance_work_mem = '__POSTGRES_MAINTENANCE_WORK_MEM__'
+timezone = '__TZ__'
+log_destination = 'stderr'
+logging_collector = off
