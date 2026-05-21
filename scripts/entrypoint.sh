@@ -117,11 +117,11 @@ fi
 
 if [[ ! -s "$PGDATA/PG_VERSION" ]]; then
   log "initializing PostgreSQL data directory"
-  su-exec postgres initdb -D "$PGDATA" --encoding=UTF8 --locale=C >/dev/null
+  gosu postgres initdb -D "$PGDATA" --encoding=UTF8 --locale=C >/dev/null
 fi
 
 log "starting PostgreSQL"
-su-exec postgres postgres -D "$PGDATA" -c "config_file=$CONFIG_DIR/postgresql.conf" >>"$LOG_DIR/postgres.log" 2>&1 &
+gosu postgres postgres -D "$PGDATA" -c "config_file=$CONFIG_DIR/postgresql.conf" >>"$LOG_DIR/postgres.log" 2>&1 &
 postgres_pid=$!
 
 cleanup() {
@@ -129,7 +129,7 @@ cleanup() {
   log "stopping services"
   if [[ -n "${sub2api_pid:-}" ]] && kill -0 "$sub2api_pid" 2>/dev/null; then kill -TERM "$sub2api_pid" 2>/dev/null || true; fi
   if [[ -n "${redis_pid:-}" ]] && kill -0 "$redis_pid" 2>/dev/null; then kill -TERM "$redis_pid" 2>/dev/null || true; fi
-  if kill -0 "$postgres_pid" 2>/dev/null; then su-exec postgres pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || kill -TERM "$postgres_pid" 2>/dev/null || true; fi
+  if kill -0 "$postgres_pid" 2>/dev/null; then gosu postgres pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || kill -TERM "$postgres_pid" 2>/dev/null || true; fi
   exit "$code"
 }
 trap cleanup INT TERM EXIT
@@ -140,13 +140,13 @@ for _ in $(seq 1 60); do
 done
 pg_isready -h 127.0.0.1 -p "$DATABASE_PORT" -U postgres >/dev/null 2>&1 || die "PostgreSQL did not become ready"
 
-if ! su-exec postgres psql -h 127.0.0.1 -p "$DATABASE_PORT" -tAc "SELECT 1 FROM pg_roles WHERE rolname='${DATABASE_USER}'" | grep -q 1; then
+if ! gosu postgres psql -h 127.0.0.1 -p "$DATABASE_PORT" -tAc "SELECT 1 FROM pg_roles WHERE rolname='${DATABASE_USER}'" | grep -q 1; then
   log "creating PostgreSQL role $DATABASE_USER"
-  su-exec postgres psql -h 127.0.0.1 -p "$DATABASE_PORT" -v ON_ERROR_STOP=1 -c "CREATE ROLE \"$DATABASE_USER\" LOGIN PASSWORD '$DATABASE_PASSWORD';" >/dev/null
+  gosu postgres psql -h 127.0.0.1 -p "$DATABASE_PORT" -v ON_ERROR_STOP=1 -c "CREATE ROLE \"$DATABASE_USER\" LOGIN PASSWORD '$DATABASE_PASSWORD';" >/dev/null
 fi
-if ! su-exec postgres psql -h 127.0.0.1 -p "$DATABASE_PORT" -tAc "SELECT 1 FROM pg_database WHERE datname='${DATABASE_DBNAME}'" | grep -q 1; then
+if ! gosu postgres psql -h 127.0.0.1 -p "$DATABASE_PORT" -tAc "SELECT 1 FROM pg_database WHERE datname='${DATABASE_DBNAME}'" | grep -q 1; then
   log "creating PostgreSQL database $DATABASE_DBNAME"
-  su-exec postgres createdb -h 127.0.0.1 -p "$DATABASE_PORT" -O "$DATABASE_USER" "$DATABASE_DBNAME"
+  gosu postgres createdb -h 127.0.0.1 -p "$DATABASE_PORT" -O "$DATABASE_USER" "$DATABASE_DBNAME"
 fi
 
 log "starting Redis"

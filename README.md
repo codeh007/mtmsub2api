@@ -2,7 +2,7 @@
 
 Public all-in-one Docker image for running [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) as a single-container service.
 
-`mtmsub2api` is a delivery wrapper: it does **not** replace sub2api, PostgreSQL, or Redis. It packages the upstream sub2api image with standard PostgreSQL and Redis inside one container, using one persistent `/data` volume.
+This image is built on top of `docker.io/gitgit188/gomtm`, the shared gomtm runtime base image. It copies the upstream sub2api binary from the official upstream image, then adds only the service-specific PostgreSQL, Redis, entrypoint, healthcheck, and backup logic.
 
 ## Image
 
